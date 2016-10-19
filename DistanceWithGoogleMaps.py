@@ -50,7 +50,26 @@ class geometry:
     # This special case works for all distances
     # Input: (latitude, longitude pairs) as Phi and Lam respectively
     # Output: the central angle of the two points
-    def VicentyCentralAngle( phi1, phi2, lam1, lam2 ):
+    def VicentyCentralAngle( c0, c1 ):
+        # c = [phi1, lam1]
+        phi1 = c0[0]
+        lam1 = c0[1]
+        phi2 = c1[0]
+        lam2 = c1[1]
+        dPhi = math.radians( phi1 - phi2)
+        dLam = math.radians( lam1 - lam2)
+        phi1 = math.radians( phi1)
+        phi2 = math.radians( phi2)
+        radicand = ( math.cos(phi2)*math.sin(dLam))**2 + (math.cos(phi1)*math.sin(phi2)-math.sin(phi1)*math.cos(phi2)*math.cos(dLam))**2
+        denominator = math.sin(phi1)*math.sin(phi2)+math.cos(phi1)*math.cos(phi2)*math.cos(dLam)
+        return math.atan( math.sqrt( radicand ) / denominator )
+
+
+    # Vicenty Formula for the central angle
+    # This special case works for all distances
+    # Input: (latitude, longitude pairs) as Phi and Lam respectively
+    # Output: the central angle of the two points
+    def VicentyCentralAngle2( phi1, phi2, lam1, lam2 ):
         dPhi = math.radians( phi1 - phi2)
         dLam = math.radians( lam1 - lam2)
         phi1 = math.radians( phi1)
@@ -112,8 +131,7 @@ class GoogleMapsAPI:
     response = ''
 
     # Latitude and Longitude of the city - from Geocode API
-    lat = 0.0
-    lng = 0.0
+    currentMax = [['',''],0]
     
     
     # Cities given in the prompt
@@ -141,14 +159,18 @@ class GoogleMapsAPI:
 
 
     # Get geocode of a given city - REQUIRES HIRED KEY
-    def getCityCeo(self):
+    def getCityGeo(self):
         self.response = self.gmaps.geocode( self.Cities[0] )
-        self.lat = self.response[ len(self.response)-2]['geometry']['location']['lat']
-        self.lng = self.response[ len(self.response)-2]['geometry']['location']['lng']
+        lat = self.response[ len(self.response)-2]['geometry']['location']['lat']
+        lng = self.response[ len(self.response)-2]['geometry']['location']['lng']
         print( "Longitude:\t" + str(self.lng) + "\nLatitude:\t" + str(self.lat) )
-        invLat = -1*self.lat
-        invLng = -1*self.lng
-        #print( self.response[ self.response.index()]['geometry']['location']['lng'] )
+        return [lat,lng]
+
+    # Process pairs of cities and update the max
+    def processCities(self):
+        for index1 in range( len( self.Cities ) ):
+            for index2 in range( index1+1, len( self.Cities ) ):
+                print( str(self.Cities[index1]) + "||" + str(self.Cities[index2]))
 
 
     # Get value from JSON
@@ -156,7 +178,7 @@ class GoogleMapsAPI:
         print( self.response['rows'][0]['elements'][0]['distance']['text'] )
 
 
-    # Store one copy the response
+    # Store one copy the response using MY DISTANCE MATRIX KEY
     def getResponse(self):
         self.response =  self.gmaps.distance_matrix( self.Cities[2] , self.Cities[5],mode=None)
 
@@ -172,7 +194,8 @@ class GoogleMapsAPI:
     # Run functions using MY GEOCODING KEY 
     def runWithHiredKey( self ):
         gmaps = googlemaps.Client(key=self.API_KEY[0])
-        self.getCityCeo()
+        self.getCityGeo()
+        self.processCities()
     
 
     # Run the program
@@ -203,5 +226,5 @@ for i in range( len(list)):
     print( list[i] )
 
 
-# x = GoogleMapsAPI()
+x = GoogleMapsAPI()
 print("Successful Run")
