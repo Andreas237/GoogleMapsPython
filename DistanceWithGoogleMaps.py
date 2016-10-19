@@ -18,21 +18,13 @@ import math
 # Variables:
 #   Phi     - Latitude
 #   Lamda   - Longitude
+# Necessary Libraries: math
 class geometry:
-    
 
+    # Radius of the earth
+    EarthRadius = 6371
 
-    radius = {'km':6371.00,'mi':3959.00}
-
-
-
-    def absoluteDistance(p1, p2):
-        return math.fabs(p1 - p2)
-
-
-
-
-    # Via Speherical Law of Cosines
+    # Via Speherical Law of Cosines for the central angle
     # Input: (latitude, longitude pairs) as Phi and Lam respectively
     # Output: the central angle of the two points
     def centralAngle( phi1, phi2, lam1, lam2):
@@ -42,20 +34,36 @@ class geometry:
 
 
 
-    # Haversine Formula
+    # Haversine Formula for the central angle
     # Better for small distances
     # Input: (latitude, longitude pairs) as Phi and Lam respectively
     # Output: the central angle of the two points
     def HaversineCentralAngle( phi1, phi2, lam1, lam2 ):
-        absPhi = absoluteDistance( phi1, phi2)
-        absLam = absoluteDistance( lam1, lam2)
-        return 2 * math.arcsin(  math.sqrt(  math.sin(
+        dPhi = math.radians( phi1 - phi2)
+        dLam = math.radians( lam1 - lam2)
+        phi1 = math.radians( phi1)
+        phi2 = math.radians( phi2)
+        radicand = math.sin(dPhi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dLam/2)**2
+        return 2 * math.asin( math.sqrt( radicand ) )
+
+    # Vicenty Formula for the central angle
+    # This special case works for all distances
+    # Input: (latitude, longitude pairs) as Phi and Lam respectively
+    # Output: the central angle of the two points
+    def VicentyCentralAngle( phi1, phi2, lam1, lam2 ):
+        dPhi = math.radians( phi1 - phi2)
+        dLam = math.radians( lam1 - lam2)
+        phi1 = math.radians( phi1)
+        phi2 = math.radians( phi2)
+        radicand = ( math.cos(phi2)*math.sin(dLam))**2 + (math.cos(phi1)*math.sin(phi2)-math.sin(phi1)*math.cos(phi2)*math.cos(dLam))**2
+        denominator = math.sin(phi1)*math.sin(phi2)+math.cos(phi1)*math.cos(phi2)*math.cos(dLam)
+        return math.atan( math.sqrt( radicand ) / denominator )
 
 
 
     # Arc Length from the Law of Cosines
-    def HaversineArcLength(r, phi1, phi2, lam1, lam2):
-        return r * centralAngle( phi1, phi2, lam1, lam2)
+    def ArcLength(r, angle):
+        return r * angle
         
 
 
@@ -91,7 +99,7 @@ class geometry:
 #   4 [] ) Get the distance result for all cities
 
 
-
+# Necessary Libraries: googlemaps
 class GoogleMapsAPI:
     
     # [ My Geocoding Key, My Distance Matrix Key ; Hired's key]
@@ -185,9 +193,15 @@ class GoogleMapsAPI:
 
 
 
+list = []
+a = 4
+for i in range( 0 , a): 
+    for j in range (i+1 , a): 
+        list.append([i,j])
+
+for i in range( len(list)):
+    print( list[i] )
 
 
-
-
-x = GoogleMapsAPI()
+# x = GoogleMapsAPI()
 print("Successful Run")
