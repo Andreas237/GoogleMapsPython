@@ -3,21 +3,72 @@
 
 
 import googlemaps
-import json
+import math
+
 
 
 
 #######################################################################################################
-#                                     Radius Compute
+#                                     Arc Length Compute
 #######################################################################################################
 # Helper class to compute distance between two points on a sphere
-# Use Haversine formula:    https://www.wikiwand.com/en/Haversine_formula
+# Use  Vincenty formula which is accurate for all points on the globe. Will use Haversine as test
+#                           https://www.wikiwand.com/en/Haversine_formula
 #                           https://www.wikiwand.com/en/Great-circle_distance
+# Variables:
+#   Phi     - Latitude
+#   Lamda   - Longitude
 class geometry:
-    radius = ['km':6371.00,'mi':3959.00]
-
-    # need python math then use second link, "FORMULAS" header has what we need
     
+
+
+    radius = {'km':6371.00,'mi':3959.00}
+
+
+
+    def absoluteDistance(p1, p2):
+        return math.fabs(p1 - p2)
+
+
+
+
+    # Via Speherical Law of Cosines
+    # Input: (latitude, longitude pairs) as Phi and Lam respectively
+    # Output: the central angle of the two points
+    def centralAngle( phi1, phi2, lam1, lam2):
+        sines = math.sin(phi1) * math.sin(phi2)
+        cosines = math.cos(phi1) * math.cos(phi2) * math.cos( absoluteDistance(lam1, lam2) )
+        return math.acos( sines + cosines )
+
+
+
+    # Haversine Formula
+    # Better for small distances
+    # Input: (latitude, longitude pairs) as Phi and Lam respectively
+    # Output: the central angle of the two points
+    def HaversineCentralAngle( phi1, phi2, lam1, lam2 ):
+        absPhi = absoluteDistance( phi1, phi2)
+        absLam = absoluteDistance( lam1, lam2)
+        return 2 * math.arcsin(  math.sqrt(  math.sin(
+
+
+
+    # Arc Length from the Law of Cosines
+    def HaversineArcLength(r, phi1, phi2, lam1, lam2):
+        return r * centralAngle( phi1, phi2, lam1, lam2)
+        
+
+
+
+
+#######################################################################################################
+#                                    End Arc Length Compute
+#######################################################################################################
+
+
+
+
+
 
 
 
@@ -38,6 +89,8 @@ class geometry:
 #   2 [X] ) Test that a pair of cities can be fetched [see test2]
 #   3 [X] ) Get their distance from JSON [see getDistance() ]
 #   4 [] ) Get the distance result for all cities
+
+
 
 class GoogleMapsAPI:
     
@@ -126,5 +179,15 @@ class GoogleMapsAPI:
 #######################################################################################################
 #                                     END GoogleMapsAPI
 #######################################################################################################
+
+
+
+
+
+
+
+
+
+
 x = GoogleMapsAPI()
 print("Successful Run")
