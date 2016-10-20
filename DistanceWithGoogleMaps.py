@@ -1,5 +1,22 @@
 # @Author       Andreas Slovace
 # @CreatedDate  17.10.2016
+#
+# Built with:   Python 3.5.2 on Windows 10 64 bit
+#
+# Requires:
+#               Math library, Python native
+#               google-maps-services-python, https://github.com/googlemaps/google-maps-services-python
+#
+# Purpose:      Given a list of cities find the two that are closest.
+#
+# Method:       Google-maps-services Geocoding API can take cities by name and return their latitude and longitude.
+#               The Vicenty formula was created to find the arc length between points on an ellipsoid at any
+#               distance ( https://www.wikiwand.com/en/Great-circle_distance ).  Plug the latitude, longitude pairs
+#               into the vicenty formula and return the pair with the minimum distance.
+#
+# My Approach:  First I tried using the API Key provided by hired, but Google didn't accept it for either the
+#               Distance Matrix API or Geocoding API. Since getting a key took seconds, and the Geocoding API
+#               seemed best suited for latitude and longitude I got my own key, and recalled geometry class.
 
 
 import googlemaps
@@ -12,7 +29,7 @@ import math
 #                                     Arc Length Compute
 #######################################################################################################
 # Helper class to compute distance between two points on a sphere
-# Use  Vincenty formula which is accurate for all points on the globe. Will use Haversine as test
+# Use  Haversine formula.  See references
 #                           https://www.wikiwand.com/en/Haversine_formula
 #                           https://www.wikiwand.com/en/Great-circle_distance
 # Variables:
@@ -24,13 +41,24 @@ class geometry:
     # Radius of the earth
     EarthRadius = 6371
 
-    # Via Speherical Law of Cosines for the central angle
+
+
+    # Haversine Formula for the central angle
+    # Better for small distances
     # Input: (latitude, longitude pairs) as Phi and Lam respectively
     # Output: the central angle of the two points
-    def centralAngle( phi1, phi2, lam1, lam2):
-        sines = math.sin(phi1) * math.sin(phi2)
-        cosines = math.cos(phi1) * math.cos(phi2) * math.cos( absoluteDistance(lam1, lam2) )
-        return math.acos( sines + cosines )
+    def HaversineCentralAngle( c0, c1 ):
+        # c = [phi1, lam1]
+        phi1 = c0[0]
+        lam1 = c0[1]
+        phi2 = c1[0]
+        lam2 = c1[1]
+        dPhi = math.radians( phi1 - phi2)
+        dLam = math.radians( lam1 - lam2)
+        phi1 = math.radians( phi1)
+        phi2 = math.radians( phi2)
+        radicand = math.sin(dPhi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dLam/2)**2
+        return 2 * math.asin( math.sqrt( radicand ) )
 
 
 
@@ -38,7 +66,7 @@ class geometry:
     # Better for small distances
     # Input: (latitude, longitude pairs) as Phi and Lam respectively
     # Output: the central angle of the two points
-    def HaversineCentralAngle( phi1, phi2, lam1, lam2 ):
+    def HaversineCentralAngle2( phi1, phi2, lam1, lam2 ):
         dPhi = math.radians( phi1 - phi2)
         dLam = math.radians( lam1 - lam2)
         phi1 = math.radians( phi1)
@@ -70,8 +98,8 @@ class geometry:
     # Input: (latitude, longitude pairs) as Phi and Lam respectively
     # Output: the central angle of the two points
     def VicentyCentralAngle2( phi1, phi2, lam1, lam2 ):
-        dPhi = math.radians( phi1 - phi2)
-        dLam = math.radians( lam1 - lam2)
+        dPhi = math.radians( phi1 - phi2 )
+        dLam = math.radians( lam1 - lam2 )
         phi1 = math.radians( phi1)
         phi2 = math.radians( phi2)
         radicand = ( math.cos(phi2)*math.sin(dLam))**2 + (math.cos(phi1)*math.sin(phi2)-math.sin(phi1)*math.cos(phi2)*math.cos(dLam))**2
@@ -79,13 +107,16 @@ class geometry:
         return math.atan( math.sqrt( radicand ) / denominator )
 
 
+    # From my geometry book
+    def centralAngleGeometryClass( phi1, phi2, lam1, lam2 ):
+        return math.acos( math.sin(phi1)*math.sin(phi2) + math.cos(phi1)*math.cos(phi2)*math.cos(lam1-lam2)) 
+
 
     # Arc Length from the Law of Cosines
     def ArcLength(r, angle):
         return r * angle
+
         
-
-
 
 
 #######################################################################################################
@@ -115,7 +146,9 @@ class geometry:
 #   1 [X] ) Log in
 #   2 [X] ) Test that a pair of cities can be fetched [see test2]
 #   3 [X] ) Get their distance from JSON [see getDistance() ]
-#   4 [] ) Get the distance result for all cities
+#   4 [X] ) Get the distance result for all cities
+#   5 [] ) Print the formatted answer
+#   6 [] ) FINAL: print on the minimum
 
 
 # Necessary Libraries: googlemaps
@@ -131,8 +164,13 @@ class GoogleMapsAPI:
     response = ''
 
     # Latitude and Longitude of the city - from Geocode API
-    currentMax = [['',''],0]
+    currentMin = [['',''],99999999]
+    lat = 0
+    lng = 0
     
+
+    # Cities and coordinates
+    CityCoord = {}
     
     # Cities given in the prompt
     Cities = ["San Francisco, CA, United States",
@@ -153,24 +191,31 @@ class GoogleMapsAPI:
               ]
 
 
-    # Test that the repsonse is coming in as expected - REQUIRES MY KEY
+    # Test that the repsonse is coming in as expected - REQUIRES MY DISTNANCE MATRIX KEY
     def test2(self):
         print( self.gmaps.distance_matrix( self.Cities[2] , self.Cities[5],mode=None)  )
 
 
-    # Get geocode of a given city - REQUIRES HIRED KEY
+    # Fill the CityCoord variable with City as key and its coordinates as values
+    def fillCityCoord(self):
+        print("Filling City Coordinates")
+        for i in range( len( self.Cities) ):
+            self.CityCoord[ self.Cities[i] ] = self.getCityGeo( self.Cities[i] ) 
+
+
+    # Get geocode of a given city - REQUIRES MY GEOCODING KEY
     def getCityGeo(self):
         self.response = self.gmaps.geocode( self.Cities[0] )
         lat = self.response[ len(self.response)-2]['geometry']['location']['lat']
         lng = self.response[ len(self.response)-2]['geometry']['location']['lng']
-        print( "Longitude:\t" + str(self.lng) + "\nLatitude:\t" + str(self.lat) )
         return [lat,lng]
 
-    # Process pairs of cities and update the max
-    def processCities(self):
-        for index1 in range( len( self.Cities ) ):
-            for index2 in range( index1+1, len( self.Cities ) ):
-                print( str(self.Cities[index1]) + "||" + str(self.Cities[index2]))
+    # Get geocode of a given city - REQUIRES MY GEOCODING KEY
+    def getCityGeo(self, cityName):
+        self.response = self.gmaps.geocode( cityName )
+        lat = self.response[ len(self.response)-2]['geometry']['location']['lat']
+        lng = self.response[ len(self.response)-2]['geometry']['location']['lng']
+        return [lat,lng]
 
 
     # Get value from JSON
@@ -181,28 +226,59 @@ class GoogleMapsAPI:
     # Store one copy the response using MY DISTANCE MATRIX KEY
     def getResponse(self):
         self.response =  self.gmaps.distance_matrix( self.Cities[2] , self.Cities[5],mode=None)
+    
 
+    # Given a pair of citiesand their distance print it prettily
+    # A 'pair' is [['City 1','City 2'],distance_in_km]
+    def printPrettyPair( self, pair):
+        print(pair[0][0] + " and " + pair[0][1] + " are " + str( pair[1] ) + "KM apart.\n")
+    
+
+    # Process pairs of cities and update the max
+    def processCities(self):
+        print( "Processing Cities..")
+        for index0 in range( len( self.Cities ) ):
+            for index1 in range( index0+1, len( self.Cities ) ):
+                c0 = self.CityCoord[ self.Cities[index0] ]
+                c1= self.CityCoord[ self.Cities[index1] ]
+                distance = math.fabs(geometry.ArcLength( geometry.EarthRadius, geometry.HaversineCentralAngle(c0, c1)))
+                currentPair = [[self.Cities[index0],self.Cities[index1]],distance]
+                self.setMinPair(currentPair)
+                #self.printPrettyPair( self.Cities[index0], self.Cities[index1], distance)
+                # print( self.Cities[index0] + "\tLat: " + str(c0[0]) + "\tLong: " + str(c0[1]) )
+                # print( self.Cities[index1] + "\tLat: " + str(c1[0]) + "\tLong: " + str(c1[1]) )
+    
 
     # Run functions using MY DISTANCE MATRIX KEY
-    def runWithASKey(self):
+    def runWithASDistanceMatrix(self):
         gmaps = googlemaps.Client(key=self.API_KEY[1])
         self.test2()
         self.getResponse()
         print( self.response )
         # self.getDistance() #Gets the text distance- which is incorrect
+    
 
     # Run functions using MY GEOCODING KEY 
-    def runWithHiredKey( self ):
+    def runWithASGeoCodeKey( self ):
         gmaps = googlemaps.Client(key=self.API_KEY[0])
-        self.getCityGeo()
+        # c = self.getCityGeo( self.Cities[5] )
+        # print("Latitude: " + str( c[0] ) + "\tLongitude: " + str( c[1] ) )
+        self.fillCityCoord()
         self.processCities()
+    
+
+    # Set minimum in self based on input
+    def setMinPair(self, newIn):
+        if( self.currentMin[1] > newIn[1]):
+            # print("\n\n\nChanged Min from: " + self.currentMin[0][0] + "," + self.currentMin[0][1] + "\td = " + str(self.currentMin[1]) + "\n" + newIn[0][0] + "," + newIn[0][1] + "\td = " + str(newIn[1]) )
+            self.currentMin = newIn
+            
     
 
     # Run the program
     def __init__(self):
-        self.runWithASKey()
-        print("\n\nOnto getting JSON:\n\n")
-        self.runWithHiredKey()
+        self.runWithASGeoCodeKey()
+        self.printPrettyPair(self.currentMin)
         
         
 
@@ -213,18 +289,4 @@ class GoogleMapsAPI:
 
 
 
-
-
-
-list = []
-a = 4
-for i in range( 0 , a): 
-    for j in range (i+1 , a): 
-        list.append([i,j])
-
-for i in range( len(list)):
-    print( list[i] )
-
-
 x = GoogleMapsAPI()
-print("Successful Run")
