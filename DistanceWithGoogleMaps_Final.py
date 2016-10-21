@@ -143,18 +143,8 @@ class GoogleMapsAPI:
     # Method: Authenticate, get each city's coordinates, find the minimum distance
     def __init__(self):
         gmaps = googlemaps.Client(key=self.API_KEY)
-        self.fillCityCoord()
         self.processCities()
         self.printPrettyPair(self.currentMin)
-        
-
-    # Function:     fillCityCoord
-    # Purpose:      Fill the CityCoord dictionary with City as key and its coordinates as values
-    # Method:       Loop through Cities[] 
-    # Inputs:       Refer to the list of cities in the class, Cities[]
-    def fillCityCoord(self):
-        for i in range( len( self.Cities) ):
-            self.CityCoord[ self.Cities[i] ] = self.getCityGeo( self.Cities[i] ) 
 
 
     # Function: getCityGeo
@@ -187,9 +177,9 @@ class GoogleMapsAPI:
     def processCities(self):
         print( "Processing Cities..")
         for index0 in range( len( self.Cities ) ):
+            c0 = self.getCityGeo( self.Cities[index0] ) 
             for index1 in range( index0+1, len( self.Cities ) ):
-                c0 = self.CityCoord[ self.Cities[index0] ]
-                c1= self.CityCoord[ self.Cities[index1] ]
+                c1 = self.getCityGeo( self.Cities[index1] )
                 distance = math.fabs(geometry.ArcLength( geometry.EarthRadius, geometry.HaversineCentralAngle(c0, c1)))
                 currentPair = [[self.Cities[index0],self.Cities[index1]],distance]
                 self.setMinPair(currentPair)

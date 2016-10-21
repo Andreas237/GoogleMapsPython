@@ -238,9 +238,11 @@ class GoogleMapsAPI:
     def processCities(self):
         print( "Processing Cities..")
         for index0 in range( len( self.Cities ) ):
+            c0 = self.getCityGeo( self.Cities[index0] ) 
             for index1 in range( index0+1, len( self.Cities ) ):
-                c0 = self.CityCoord[ self.Cities[index0] ]
-                c1= self.CityCoord[ self.Cities[index1] ]
+                c1 = self.getCityGeo( self.Cities[index1] )
+                # c0 = self.CityCoord[ self.Cities[index0] ]
+                # c1= self.CityCoord[ self.Cities[index1] ]
                 distance = math.fabs(geometry.ArcLength( geometry.EarthRadius, geometry.HaversineCentralAngle(c0, c1)))
                 currentPair = [[self.Cities[index0],self.Cities[index1]],distance]
                 self.setMinPair(currentPair)
@@ -263,7 +265,7 @@ class GoogleMapsAPI:
         gmaps = googlemaps.Client(key=self.API_KEY[0])
         # c = self.getCityGeo( self.Cities[5] )
         # print("Latitude: " + str( c[0] ) + "\tLongitude: " + str( c[1] ) )
-        self.fillCityCoord()
+        # self.fillCityCoord()
         self.processCities()
     
 
